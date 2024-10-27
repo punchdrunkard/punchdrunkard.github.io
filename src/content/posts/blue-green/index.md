@@ -1,0 +1,439 @@
+---
+title: Docker + GitHub Actions + Nginx를 활용한 CI/CD 및 무중단 배포 구축
+published: 2024-10-27
+description: 'Blue-Green 배포 방식과 CI/CD 파이프라인 설정을 통해 Spring Boot 애플리케이션의 무중단 배포를 구축한다.'
+image: ''
+tags: [CI-CD, GitHub Actions, Docker, Nginx, 무중단 배포, Spring Boot]
+category: 'DevOps'
+draft: false 
+---
+
+# 들어가며
+
+![](https://github.com/user-attachments/assets/69025b16-cb41-4f75-b3d5-b216dddc4b5e)
+
+DND에서 진행한 프로젝트는 짧은 개발 기간과 잦은 업데이트로 인해 프론트엔드와의 원활한 협업을 위해서도 CI/CD 환경과 **무중단 배포** 환경을 구성해야 했다. 즉, 배포 프로세스를 효율적으로 관리하고, 안정적인 업데이트를 제공하기 위해 무중단 배포 방식을 도입하게 되었다.
+
+프로젝트의 배포 과정을 간단히 요약하면 다음과 같다.
+
+![](https://i.imgur.com/yB3ynt4.png)
+
+1. GitHub의 main 브랜치에 코드가 push 되면 CD 액션이 실행
+2. GitHub Actions에서 Spring Boot 애플리케이션을 빌드한 후, Docker 이미지를 빌드하여 저장소에 푸시
+3. SSH를 통해 EC2 서버에 접근하여 배포를 진행
+4. EC2 서버의 배포 스크립트를 실행하여 애플리케이션을 무중단 배포
+
+# 배포 전략: Blue-Green Deployment
+
+  무중단 배포를 구현하는 여러 방법 중, 소규모의 프로젝트에서 비용 과금을 막기 위해, **단일 EC2 인스턴스에서 Blue-Green 배포 방식**을 사용하기로 결정하였다.
+
+ 이 배포 방식에서는 두 가지 버전의 배포 인스턴스(Blue와 Green)를 준비하고, Blue는 현재 운영 중인 버전, Green은 새로운 버전으로 설정한다. 이후 로드밸런서를 통해 Blue에서 Green으로 트래픽을 전환하여 무중단 배포를 구현한다.
+
+단일 EC2 인스턴스에서 두 버전의 Spring Boot 애플리케이션을 동시에 실행하기 위해 Docker로 각 버전을 컨테이너화하였고, **Docker-Compose**로 두 컨테이너를 관리한다.
+
+이 후, 배포가 main 브랜치에 push 되면서 시작되면 `nginx`를 **로드밸런서** 및 **프록시 서버**로 설성하여 트래픽을 기존 버전(Blue)에서 새 버전(Green)으로 전환할 수 있도록 설정한다.
+
+:::caution[주의사항]
+ 단일 EC2 인스턴스에 두 개의 컨테이너를 실행하는 방식이므로, Free Tier에서 이 설정을 사용할 경우 CPU가 과부하 될 수 있다. 따라서 **Free Tier 처럼 메모리가 작은 인스턴스에서는 스왑 공간을 추가로 설정해야 한다**. ([참고자료: AWS EC2 프리티어에서 메모리 부족현상 해결방법](https://sundries-in-myidea.tistory.com/102))
+
+또한,  **Docker-Compose에서 `restart` 옵션을 `on-failure`로 설정하면 메모리 부족으로 인해 컨테이너가 반복적으로 재시작될 수 있으며, 이는 EC2 CPU를 100%로 고정시켜 SSH 접속이 불가능한 상태를 초래할 수 있다.** 러한 경우, CPU 크레딧 설정을 일시적으로 무제한으로 변경하고 모든 컨테이너를 중지해 문제를 해결해야 한다. ([참고자료: [디버깅] EC2 인스턴스 먹통 혹은 CPU 점유율 100% 문제](https://bb-library.tistory.com/187))
+:::
+
+# Repository 에서의 설정
+
+### Github Action을 활용한 CI/CD 파이프라인
+
+배포 자동화를 위해 GitHub Actions을 이용해 CI/CD 파이프라인을 구성한다.
+위에서 설명한 대로,  CD 액션에서 EC2에 접근하여 EC2 내부에 있는 `deploy.sh` 를 실행하는 역할을 한다.
+이 때, SSH 로 EC2 에 접근하게 되는데 EC2의 모든 IP 에 대해 SSH 포트를 열게 된다면 보안상 문제가 생길 수 있기 때문에 Github Action 의 IP를 동적으로 보안 그룹에 추가하는 작업 역시 추가하였다.
+
+```yml
+name: Java CI/CD Pipeline with Gradle and Docker  
+  
+on:  
+  push:  
+    branches: [ "main" ]  
+  
+permissions:  
+  contents: read  
+  
+jobs:  
+  build:  
+    runs-on: ubuntu-latest  
+    steps:  
+      - name: Get Github Actions IP  
+        id: ip  
+        uses: haythem/public-ip@v1.2  
+  
+      - name: Configure AWS Credentials  
+        uses: aws-actions/configure-aws-credentials@v1  
+        with:  
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  
+          aws-region: ap-northeast-2  
+  
+      - name: Add Github Actions IP to Security group  
+        run: |  
+          aws ec2 authorize-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32   
+      - name: Repository Checkout  
+        uses: actions/checkout@v3  
+        # 환경 변수 submodule 로 관리시, 주석 해제
+        # with:  
+         # token: ${{ secrets.ACTION_TOKEN }}        
+         # submodules: true  
+        
+      - name: Set up JDK 21  
+        uses: actions/setup-java@v3  
+        with:  
+          java-version: '21'  
+          distribution: 'temurin'  
+  
+  
+      - name: Build with Gradle  
+        run: ./gradlew bootJar  
+  
+      - name: web docker build and push  
+        run: |  
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}          
+          docker build -t ${{ secrets.DOCKER_REPO }}/fiesta-test-web .          
+          docker push ${{ secrets.DOCKER_REPO }}/fiesta-test-web  
+      
+      ## docker compose up  
+      - name: Deploy to Dev  
+        uses: appleboy/ssh-action@master  
+        with:  
+          username: ubuntu  
+          host: ${{ secrets.HOST }}  
+          key: ${{ secrets.KEY }}  
+          script: |  
+            sudo docker pull ${{ secrets.DOCKER_REPO }}/fiesta-test-web            
+            chmod 777 ./deploy.sh            
+            sudo ./deploy.sh            
+            docker image prune -f  
+      
+   - name: Remove Github Actions IP From Security Group  
+  if: always()
+        run: |  
+          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+```
+
+### `Dockerfile`
+
+레포지토리에 있는 Spring Boot 를 빌드하고 Docker Image 를 만들기 위한 `Dockerfile` 를 작성한다.
+jdk의 버전 정보는 프로젝트에서 사용하는 버전을 사용한다.
+
+```Dockerfile
+FROM openjdk:21-jdk-slim
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+```
+
+## 배포 환경 설정 (EC2 인스턴스)
+
+:::note
+EC2 인스턴스의 경우 `ubuntu` 환경에서 진행하였다.
+:::
+
+EC2 인스턴스 내부에서는 Docker-Compose를 통해 blue, green 버전의 컨테이너를 관리하게 되고 NGINX 를 통해 트래픽을 각 컨테이너로 전환한다.
+
+해당 작업을 위해 `docker-Compose.yaml` 파일을 작성하고, 각 컨테이너에 대한 nginx 설정파일 (`nginx.conf`)을 작성한 후, 배포 스크립트를 작성하여 트래픽을 전환하는 작업을 수행하게 된다.
+
+따라서 EC2 인스턴스에 `docker-compose.yaml`,`deploy.sh`, 그리고 `nginx.blue.conf`, `nginx.green.conf` 를 작성해야 한다.
+
+필자의 경우, 아래와 같은 디렉토리에 각 파일들을 작성하였다.
+
+```bash
+/home/ubuntu
+├── docker-compose.yaml       # Docker 컨테이너 설정 파일 (Blue & Green 버전 관리)
+└── deploy.sh                 # 무중단 배포를 위한 배포 스크립트
+
+/etc/nginx                    # 해당 폴더에서 write 시 sudo 권한 필요
+├── nginx.blue.conf               
+└── nginx.green.conf
+
+```
+
+### `docker-compose.yml`
+
+```yml
+services:
+  green:
+    container_name: green
+    image: 빌드한 도커 이미지 이름
+    ports:
+      - "8080:8080"
+    environment:
+      - "SPRING_PROFILES_ACTIVE=prod"
+
+  blue:
+    container_name: blue
+    image: 빌드한 도커 이미지 이름
+    ports:
+      - "8081:8080"
+    environment:
+      - "SPRING_PROFILES_ACTIVE=prod"
+```
+
+docker-compose 를 통해, green 컨테이너와 blue 컨테이너를 관리하게 된다. green에는 8080 포트, blue에는 8081 포트를 매핑한다.
+
+### NGINX 설정
+
+ NGINX는 로드밸런서 역할로 사용하여 **green 또는 blue 컨테이너로 전달하는 역할**을 한다. 이를 위해 각 버전에 맞는 NGINX 설정 파일 (`nginx.blue.conf` 및 `nginx.green.conf`)를 작성하고, NGINX를 통해 트래픽을 각 버전으로 포워딩하여 배포 시 트래픽을 전환할 수 있다.
+
+ 또한 HTTPS 트래픽을 처리할 수 있도록 SSL 관련 설정도 포함하였다.
+ > [참고자료: [Docker] certbot 컨테이너를 사용해 SSL 인증서 발급받기](https://hyeo-noo.tistory.com/267)
+
+ 그리고 `fullchain.pem` 과 `privkey.pem` 이 도커 볼륨에 저장되어 있거나 해서 위치를 아래 파일의 위치가 아닐 수도 있는데 이 경우, 아래와 같은 명령어로 직접 파일의 경로를 찾아서  작성하면 된다.
+
+```bash
+sudo find / -name "fullchain.pem" 2>/dev/null
+```
+
+- `nginx.green.conf`
+
+```yaml
+# NGINX 실행 사용자 설정
+user www-data;
+worker_processes auto;  # CPU 코어 수에 따라 자동으로 worker 프로세스 설정
+pid /run/nginx.pid;  # NGINX 프로세스 ID 파일 위치
+include /etc/nginx/modules-enabled/*.conf;  # NGINX 모듈 포함
+
+events {
+    worker_connections 1024;  # 최대 연결 수 설정
+}
+
+http {
+    include mime.types;  # MIME 타입 설정 파일 포함
+
+    # HTTPS 설정 - 443 포트로 접근 시 SSL을 적용 후 요청을 Green 서버 포트(8080)로 전달
+    server {
+        listen 443 ssl;  # HTTPS 트래픽 수신 (SSL 적용)
+        server_name {도메인 명};  # 요청을 수신할 서버의 도메인
+
+        location / {
+            client_max_body_size 50M;  # 업로드 제한 설정 (50MB)
+            proxy_pass http://{EC2 퍼블릭 IP 주소}:8080;   # 요청을 Green 서버 (8080 포트)로 전달
+            proxy_set_header Host $host;  # 원본 호스트 헤더를 전달
+        }
+
+        # SSL 인증서 설정 (Certbot에 의해 관리)
+        ssl_certificate /etc/letsencrypt/live/{도메인 명}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/{도메인 명}/privkey.pem; 
+    }
+
+    # HTTP -> HTTPS 리다이렉트 설정
+    server {
+        listen 80;  # 80 포트에서 HTTP 요청을 수신
+        server_name {도메인 명};
+
+        # 모든 HTTP 요청을 HTTPS로 리다이렉트
+        return 301 https://$host$request_uri;
+    }
+}
+```
+
+- `nginx.blue.conf`
+
+```yaml
+# NGINX 실행 사용자 설정
+user www-data;
+worker_processes auto;  # CPU 코어 수에 따라 자동으로 worker 프로세스 설정
+pid /run/nginx.pid;  # NGINX 프로세스 ID 파일 위치
+include /etc/nginx/modules-enabled/*.conf;  # NGINX 모듈 포함
+
+events {
+    worker_connections 1024;  # 최대 연결 수 설정
+}
+
+http {
+    include mime.types;  # MIME 타입 설정 파일 포함
+
+    # HTTPS 설정 - 443 포트로 접근 시 SSL을 적용 후 요청을 Blue 서버 포트(8081)로 전달
+    server {
+        listen 443 ssl;  # HTTPS 트래픽 수신 (SSL 적용)
+        server_name {도메인 명};  # 요청을 수신할 서버의 도메인
+
+        location / {
+            client_max_body_size 50M;  # 업로드 제한 설정 (50MB)
+            proxy_pass http://{EC2 퍼블릭 IP 주소}:8081;   # 요청을 Blue 서버 (8081 포트)로 전달
+            proxy_set_header Host $host;  # 원본 호스트 헤더를 전달
+        }
+
+        # SSL 인증서 설정 (Certbot에 의해 관리)
+        ssl_certificate /etc/letsencrypt/live/{도메인 명}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/{도메인 명}/privkey.pem; 
+    }
+
+    # HTTP -> HTTPS 리다이렉트 설정
+    server {
+        listen 80;  # 80 포트에서 HTTP 요청을 수신
+        server_name {도메인 명};
+
+        # 모든 HTTP 요청을 HTTPS로 리다이렉트
+        return 301 https://$host$request_uri;
+    }
+}
+```
+
+### `deploy.sh`
+
+`deploy.sh` 는 현재 실행 중인 컨테이너의 상태를 확인하고, 새 버전의 컨테이너로 전환한다.
+전환이 실패할 경우에는 이전 버전으로 롤백한다.
+
+```sh
+#!/bin/bash
+
+# 롤백 시도 횟수 제한
+MAX_ROLLBACKS=3
+ROLLBACK_COUNT=0
+
+# 상수 정의: 포트와 NGINX 설정 파일 경로
+BLUE_PORT=8081
+GREEN_PORT=8080
+BLUE_CONF="/etc/nginx/nginx.blue.conf"
+GREEN_CONF="/etc/nginx/nginx.green.conf"
+NGINX_CONF="/etc/nginx/nginx.conf"
+CURRENT_STATUS_FILE="/home/ubuntu/current_status.txt"  # 현재 상태를 기록하는 파일
+
+# 현재 실행 중인 상태 확인
+IS_BLUE_RUNNING=$(docker ps | grep blue)  # blue 컨테이너가 실행 중인지 확인
+
+# 오류 발생 시 롤백 실행 후 스크립트 종료
+function handle_error() {
+    echo "배포 중 오류가 발생했습니다. 롤백을 실행합니다..."
+    if (( ROLLBACK_COUNT < MAX_ROLLBACKS )); then
+        ((ROLLBACK_COUNT++))
+        rollback
+        exit 1  # 롤백 후 스크립트 종료
+    else
+        echo "최대 롤백 시도 횟수를 초과했습니다. 오류를 확인하세요."
+        exit 1  # 최대 롤백 시도 횟수 초과 시 스크립트 종료
+    fi
+}
+
+# health check 함수 정의 (단순 요청 사용)
+function health_check() {
+    local port=$1
+    for i in {1..5}; do
+        echo "컨테이너 상태 확인 중 (포트: $port)..."
+        sleep 3
+        REQUEST=$(curl -s http://127.0.0.1:$port)  # 단순 요청으로 상태 확인
+        if [ -n "$REQUEST" ]; then
+            echo "컨테이너 상태 확인 완료 (정상)"
+            return 0  # 성공적으로 health check 완료 시 함수 종료
+        fi
+    done
+    handle_error  # health check 실패 시 오류 처리
+}
+
+# NGINX 설정 파일 리로드 함수 정의
+function nginx_reload() {
+    local config=$1
+    echo "NGINX 설정을 ${config}로 전환하고 재시작합니다."
+    sudo cp "$config" "$NGINX_CONF" || handle_error  # 복사 실패 시 롤백
+    sudo nginx -s reload || handle_error  # NGINX 리로드 실패 시 롤백
+}
+
+# 롤백 함수 정의: 이전 상태로 복구하고 현재 배포된 컨테이너 중지
+function rollback() {
+    if [[ -f "$CURRENT_STATUS_FILE" ]]; then
+        PREVIOUS_STATUS=$(cat "$CURRENT_STATUS_FILE")
+        
+        if [ "$PREVIOUS_STATUS" == "green" ]; then
+            echo "### 롤백: BLUE에서 GREEN으로 복구합니다 ###"
+            docker-compose up -d green
+            health_check "$GREEN_PORT"
+            nginx_reload "$GREEN_CONF"
+            
+            # 현재 배포된 blue 컨테이너 중지
+            echo "롤백: blue 컨테이너 중지"
+            docker-compose stop blue || echo "경고: blue 컨테이너 중지 실패"
+        else
+            echo "### 롤백: GREEN에서 BLUE로 복구합니다 ###"
+            docker-compose up -d blue
+            health_check "$BLUE_PORT"
+            nginx_reload "$BLUE_CONF"
+            
+            # 현재 배포된 green 컨테이너 중지
+            echo "롤백: green 컨테이너 중지"
+            docker-compose stop green || echo "경고: green 컨테이너 중지 실패"
+        fi
+    else
+        echo "이전 상태를 확인할 수 없습니다. 롤백 불가. 모든 컨테이너를 중지합니다."
+        
+        # 모든 컨테이너 중지
+        docker-compose stop || echo "경고: 모든 컨테이너 중지 실패"
+        exit 1
+    fi
+}
+
+# 배포 실행 (BLUE <-> GREEN 전환)
+if [ -n "$IS_BLUE_RUNNING" ]; then
+    echo "### BLUE 상태에서 GREEN 상태로 전환합니다 ###"
+    
+    echo "1. green 이미지 가져오기"
+    docker-compose pull green || handle_error  # 이미지 가져오기 실패 시 롤백
+
+    echo "2. green 컨테이너 실행"
+    docker-compose up -d green || handle_error  # green 컨테이너 실행 실패 시 롤백
+
+    # green 컨테이너 health check
+    health_check "$GREEN_PORT"
+
+    # NGINX 설정을 green으로 전환
+    nginx_reload "$GREEN_CONF"
+
+    # 현재 상태를 기록
+    echo "green" > "$CURRENT_STATUS_FILE"
+
+    # 기존 blue 컨테이너 중지
+    echo "5. blue 컨테이너 중지"
+    docker-compose stop blue || echo "경고: blue 컨테이너 중지 실패"  # 중지 실패 시 경고만 출력
+
+else
+    echo "### GREEN 상태에서 BLUE 상태로 전환합니다 ###"
+
+    echo "1. blue 이미지 가져오기"
+    docker-compose pull blue || handle_error  # 이미지 가져오기 실패 시 롤백
+
+    echo "2. blue 컨테이너 실행"
+    docker-compose up -d blue || handle_error  # blue 컨테이너 실행 실패 시 롤백
+
+    # blue 컨테이너 health check
+    health_check "$BLUE_PORT"
+
+    # NGINX 설정을 blue로 전환
+    nginx_reload "$BLUE_CONF"
+
+    # 현재 상태를 기록
+    echo "blue" > "$CURRENT_STATUS_FILE"
+
+    # 기존 green 컨테이너 중지
+    echo "5. green 컨테이너 중지"
+    docker-compose stop green || echo "경고: green 컨테이너 중지 실패"  # 중지 실패 시 경고만 출력
+fi
+```
+
+스크립트는 다음과 같이 동작한다.
+
+1. 상태 확인
+
+- `IS_BLUE_RUNNING` 를 통해 현재 실행 중인 컨테이너의 상태를 확인한다.
+
+2. Health Check
+
+- `Spring Actuator` 를 사용한다면 애플리케이션의 상태를 더욱 세밀하고 안정적으로 확인할 수 있다. 그러나, 현재는 해당 라이브러리를 사용하지 않는다고 가정하고 단순히 `curl` 을 이용하여 지정된 포트에 단순히 요청을 보내 응답이 있는지 확인하여 애플리케이션 상태를 점검한다.
+
+3. Rollback
+
+- `CURRENT_STATUS_FILE`에 기록된 `PREVIOUS_STATUS` 값을 기준으로 롤백한다.
+- 무한 롤백을 막기 위해, `MAX_ROLLBACKS` 를 설정하여 이를 넘으면 강제로 종료되게 한다.
+
+## 마무리
+
+ 혼자서 프로젝트를 하게 된다면 배포까지 할 일이 없어서 인프라 측면을 생각하지 못하는데 팀 프로젝트를 하면서 **CI/CD 파이프라인과 무중단 배포 환경 구축**을 경험할 수 있는 좋은 기회였다.
+
+특히 무중단 배포를 구현하며, 제한된 컴퓨팅 자원에서 적합한 배포 방식을 선택하고, 서버의 안정성을 위해 스레싱(thrashing)을 설정하는 과정에서 **서버 운영이 컴퓨팅 자원을 효율적으로 다루는 것과 밀접하게 연결된다는 것**이 실감되었다.
+
+여기서는 무중단 배포과 CI/CD 파이프라인에만 초점을 맞췄으나, 이 후에 각 컨테이너들에 대한 **로그 관리**와 **세밀한 롤백 처리**와 같은 추가적인 배포 안정성 강화를 위한 설정을 더 연구해보고 싶다.
