@@ -39,7 +39,21 @@ export const siteConfig: SiteConfig = {
       // theme: 'light',              // (Optional) Either 'light' or 'dark', set only if you have different favicons for light and dark mode
       sizes: '32x32',              // (Optional) Size of the favicon, set only if you have favicons of different sizes
     }
-  ]
+  ],
+  giscus: {
+    repo: 'punchdrunkard/punchdrunkard.github.io',
+    repo_id: 'R_kgDONCPRFA',
+    category: 'Comments',
+    category_id: 'DIC_kwDONCPRFM4CjwYQ',
+    mapping: 'pathname',
+    strict: false,
+    reactions_enabled: true,
+    emit_metadata: false,
+    input_position: 'top',
+    theme: 'preferred_color_scheme',
+    lang: 'ko',
+    loading: 'lazy',
+  },
 }
 
 export const navBarConfig: NavBarConfig = {
@@ -58,7 +72,7 @@ export const navBarConfig: NavBarConfig = {
 export const profileConfig: ProfileConfig = {
   avatar: 'assets/images/avatar.JPG',  // Relative to the /src directory. Relative to the /public directory if it starts with '/'
   name: '42',
-  bio: '낭만프로그래머',
+  bio: 'qwlekjasdlkwqe',
   links: [
     // {
     //   name: 'Twitter',
