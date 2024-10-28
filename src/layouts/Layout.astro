@@ -15,6 +15,7 @@ import {
   BANNER_HEIGHT,
   BANNER_HEIGHT_EXTEND,
   BANNER_HEIGHT_HOME,
+  PAGE_WIDTH,
 } from '../constants/constants'
 import { defaultFavicons } from '../constants/icon'
 import type { Favicon } from '../types/config'
@@ -108,8 +109,14 @@ const bannerOffset =
 				  media={favicon.theme && `(prefers-color-scheme: ${favicon.theme})`}
 			/>
 		))}
+
+		<style define:vars={{
+			configHue,
+			'page-width': `${PAGE_WIDTH}rem`,
+		}}></style>  <!-- defines global css variables. This will be applied to <html> <body> and some other elements idk why -->
+
 		<!-- Set the theme before the page is rendered to avoid a flash -->
-		<script is:inline define:vars={{DEFAULT_THEME, LIGHT_MODE, DARK_MODE, AUTO_MODE, BANNER_HEIGHT_EXTEND}}>
+		<script is:inline define:vars={{DEFAULT_THEME, LIGHT_MODE, DARK_MODE, AUTO_MODE, BANNER_HEIGHT_EXTEND, PAGE_WIDTH}}>
 			const theme = localStorage.getItem('theme') || DEFAULT_THEME;
 			switch (theme) {
 				case LIGHT_MODE:
@@ -130,6 +137,12 @@ const bannerOffset =
 			let offset = Math.floor(window.innerHeight * (BANNER_HEIGHT_EXTEND / 100));
 			offset = offset - offset % 4;
 			document.documentElement.style.setProperty('--banner-height-extend', `${offset}px`);
+
+			// calculate the width of TOC widget
+			const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize)
+			const mainGridWidthPx = PAGE_WIDTH * rootFontSize
+			const tocWidth = (window.innerWidth - mainGridWidthPx) / 2 - rootFontSize
+			document.documentElement.style.setProperty('--toc-width', `${tocWidth}px`);
 		</script>
 
 		<slot name="head"></slot>
@@ -137,8 +150,6 @@ const bannerOffset =
 		<link rel="stylesheet" href="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
 
 		<link rel="alternate" type="application/rss+xml" title={profileConfig.name} href={`${Astro.site}rss.xml`}/>
-
-		<style define:vars={{ configHue }}></style>  <!-- defines global css variables. This will be applied to <html> <body> and some other elements idk why -->
 
 	</head>
 	<body class=" min-h-screen transition " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner}]}
@@ -157,7 +168,6 @@ const bannerOffset =
 <style is:global>
 	:root {
 		--hue: var(--configHue);
-		--page-width: 75rem;
 	}
 </style>
 
@@ -210,7 +220,8 @@ import {
 	BANNER_HEIGHT,
 	BANNER_HEIGHT_HOME,
 	BANNER_HEIGHT_EXTEND,
-	MAIN_PANEL_OVERLAPS_BANNER_HEIGHT
+	MAIN_PANEL_OVERLAPS_BANNER_HEIGHT,
+	PAGE_WIDTH
 } from "../constants/constants";
 
 /* Preload fonts */
@@ -402,18 +413,18 @@ const setup = () => {
 		}
 	});
 	window.swup.hooks.on('visit:end', (visit: {to: {url: string}}) => {
-		// execute 1s later
 		setTimeout(() => {
 			const heightExtend = document.getElementById('page-height-extend')
 			if (heightExtend) {
 				heightExtend.classList.add('hidden')
 			}
-		}, 200)
 
-		const toc = document.getElementById('toc-wrapper');
-		if (toc) {
-			toc.classList.remove('toc-not-ready')
-		}
+            // Just make the transition looks better
+            const toc = document.getElementById('toc-wrapper');
+            if (toc) {
+                toc.classList.remove('toc-not-ready')
+            }
+        }, 200)
 	});
 }
 if (window?.swup?.hooks) {
@@ -436,7 +447,7 @@ function scrollFunction() {
 		}
 	}
 
-	if (toc) {
+	if (bannerEnabled && toc) {
 		if (document.body.scrollTop > bannerHeight || document.documentElement.scrollTop > bannerHeight) {
 			toc.classList.remove('toc-hide')
 		} else {
@@ -463,11 +474,17 @@ function scrollFunction() {
 }
 window.onscroll = scrollFunction
 
-// calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
 window.onresize = () => {
+	// calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
 	let offset = Math.floor(window.innerHeight * (BANNER_HEIGHT_EXTEND / 100));
 	offset = offset - offset % 4;
 	document.documentElement.style.setProperty('--banner-height-extend', `${offset}px`);
+
+	// calculate the width of TOC widget
+	const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize)
+	const mainGridWidthPx = PAGE_WIDTH * rootFontSize
+	const tocWidth = (window.innerWidth - mainGridWidthPx) / 2 - rootFontSize
+	document.documentElement.style.setProperty('--toc-width', `${tocWidth}px`);
 }
 
 </script>
