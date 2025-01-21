@@ -47,6 +47,44 @@ draft: false
 - 보통 컴퓨터 켜면서 특정 키를 연타하면 되는데, 내 컴퓨터의 경우 `F2` 였다.
 - 컴퓨터 제조사 별로 진입 방법이 다르기 때문에, 본인의 컴퓨터에 맞게 방법을 찾아봐야 한다. [브랜드 및 제조사별 바이오스(bios) 단축키와 실행](https://m.blog.naver.com/tmdcjfdl3/221366662549) 와 같이 모아놓은 포스팅도 있기 때문에, 검색해보면 쉽게 찾을 수 있다.
 
+### 방화벽에서 22번 포트 허용
+
+원격 접속이 가능하도록 방화벽에서 `22`번 포트로 **들어오는** 연결을 허용하자.
+이를 위해 `iptables` 를 이용하여 방화벽을 설정할 수 있다.
+
+`iptables` 의 정책은 `INPUT`, `OUTPUT`, `FORWARD` 가 있는데, 위에서 언급했듯이 **22번 포트로 들어오는** 연결에 대한 정책을 설정할 것이기 때문에 `INPUT` 체인을 설정해보자.
+
+다음과 같이 설정할 수 있다
+
+```bash
+# 로컬에서 로컬로 (Loopback)의 모든 접속은 허용한다. 
+sudo iptables -A INPUT -i lo -j ACCEPT
+
+# ssh, http, https 포트를 개방한다.
+sudo iptables -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+
+# 패키지 업데이트에 관한 패킷들을 허용한다.
+sudo iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+# 허용되지 않은 모든 패킷은 폐기한다. 
+sudo iptables -P INPUT DROP
+# 서버를 거쳐 다른 곳으로 가는 모든 패킷도 폐기한다.
+sudo iptables -P FORWARD DROP
+```
+
+`iptables`는 메모리에 규칙을 저장하므로 재부팅 후 유지되지 않는다. 이를 해결하려면 `iptables-persistent`를 사용해 규칙을 디스크에 저장하고, 부팅 시 자동으로 불러오도록 설정해야 한다.
+
+```bash
+# 패키지 설치
+sudo apt install iptables-persistent
+```
+
+```bash
+sudo netfilter-persistent save # 저장
+sudo netfilter-persistent reload # 갱신
+```
+
 ### Wifi 연결 (유선 연결 시, 생략 가능)
 
  `ubuntu`를 설치할 때는 우선 유선 LAN을 꼽고 설치해주었다. 집 `wifi` 를 사용하려면 와이파이 비밀번호 연결이 필요하였으므로, 운영체제 설치 후 따로 관련 설정을 작성해준다.
@@ -161,3 +199,4 @@ LG 공유기의 경우, 해당 설정을 공유기에서 관리할 수 있는데
 - [Ubuntu 22.04: 명령줄에서 WiFi에 연결](https://ko.linux-console.net/?p=10329)
 - [Ubuntu 22.04 Server(CLI) WIFI 연결 방법](https://pak-j.tistory.com/69)
 - [제조사별 bios 단축키와 진입 및 바이오스 부팅순서 설정 방법 - 영상도 함께](https://m.blog.naver.com/tmdcjfdl3/221366662549)
+- <https://velog.io/@chch1213/build-home-server-4>
