@@ -2,8 +2,8 @@
 title: 01. 홈 서버 구축 - 서버 컴퓨터 기본 설정
 published: 2025-01-20
 description: 홈 서버 구축을 위한 Ubuntu Server 설치, 네트워크 설정, SSH 원격 접속 구성 방법을 단계별로 간단히 정리한다. 포트포워딩, DDNS 설정과 같은 네트워크 기본 지식도 함께 다룬다. 
-tags: [Server, Infra, Home Server, On-Premise]
-image: "https://i.imgur.com/27ZTl5S.png"
+tags: [Server, Infra, Home Server, On-Premise, SSH, Port Forwarding, Network, DDNS, NAT]
+image: "https://i.imgur.com/YNGFIii.png"
 category: 'Server'
 draft: false
 ---
@@ -151,7 +151,7 @@ LG 공유기의 경우, 해당 설정을 공유기에서 관리할 수 있는데
 
 이번 작업을 완료하고 구성을 간단하게 그림으로 나타내면 다음과 같다.
 
-![](https://i.imgur.com/27ZTl5S.png)
+![](https://i.imgur.com/YNGFIii.png)
 
  하지만 현재 서버 구성에서는 네트워크 앞 단에 보안 구성이 없기 때문에 DDOS 등의 공격에 취약할 수 밖에 없다.
  따라서 다음 글에서는 홈 서버로 유입되는 외부 트래픽에 대한 보안을 위해 **홈 서버 내부의 방화벽, 침입 차단 설정** 과 **외부 리버스 프록시를 이용한 VPN** 을 설정한다.
