@@ -218,8 +218,8 @@ MultipartFile 을 사용하는 경우, Spring Boot 라이브러리의 지원을 
 
 ## 분석
 
-> <s>해당 코드는 아래 깃허브에서 확인할 수 있습니다.</s>
-> *코드 수정중*
+> 해당 코드는 아래 깃허브에서 확인할 수 있습니다.
+> ::github{repo="punchdrunkard/file-upload"}
 
 `MultipartFile` 방식과 `InputStream` 을 직접 사용하는 방식을 비교해보았다.
 
