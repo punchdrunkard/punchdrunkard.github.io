@@ -2,14 +2,14 @@
 title: "[LeetCode] 3356 Zero Array Transformation II"
 published: 2025-03-13
 description: 이진 탐색과 차이 배열을 활용한 효율적인 구간 업데이트 문제 해결 방법
-tags: ["Binary Search", "Parametric Search", "Difference Array", "Range Update", "Prefix Sum"]
+tags: ["Algorithm", "Binary Search", "Parametric Search", "Difference Array", "Range Update", "Prefix Sum"]
 category: Problem Solving
 draft: false
 ---
 
 ## 문제 소개
 
-:::note[문제 링크]
+:::note[문제 링크 (2025년 3월 13일 Daily Problem)]
 <https://leetcode.com/problems/zero-array-transformation-ii/description/?envType=daily-question&envId=2025-03-13>
 :::
 
@@ -190,4 +190,4 @@ class Solution {
 ## 참고 자료
 
 - [이분 탐색(Binary Search) 헷갈리지 않게 구현하기](https://www.acmicpc.net/blog/view/109)
-- [Leetcode Editorial](https://leetcode.com/problems/zero-array-transformation-ii/editorial/?source=submission-ac)
+- [LeetCode Editorial](https://leetcode.com/problems/zero-array-transformation-ii/editorial/?source=submission-ac)
