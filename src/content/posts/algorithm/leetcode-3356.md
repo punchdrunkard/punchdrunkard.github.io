@@ -1,7 +1,7 @@
 ---
 title: "[LeetCode] 3356 Zero Array Transformation II"
 published: 2025-03-13
-description: 이진 탐색과 차이 배열을 활용한 효율적인 구간 업데이트 문제 해결 방법
+description: Binary Search와 Difference Array을 활용한 효율적인 구간 업데이트 문제 해결 방법
 tags: ["Algorithm", "Binary Search", "Parametric Search", "Difference Array", "Range Update", "Prefix Sum"]
 category: Problem Solving
 draft: false
