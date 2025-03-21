@@ -3,7 +3,7 @@
 title: "[LeetCode] 2401. Longest Nice Subarray"
 published: 2025-03-18
 description: Sliding Window와 비트 연산을 활용한 효율적인 하위 배열 탐색 문제 해결 방법
-tags: ["Algorithm", "Sliding Window", "Bitwise Operation", "Bitmask", "LeetCode", "Daily Problem"]
+tags: ["Algorithm", "Sliding Window", "Bitwise Operation", "Bitmask", "LeetCode"]
 category: Problem Solving
 draft: false
 ---  
