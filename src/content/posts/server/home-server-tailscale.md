@@ -2,7 +2,7 @@
 title: 03. 홈 서버 - Tailscale과 GitHub Actions로 배포 자동화하기
 published: 2025-03-30
 description: Tailscale을 활용해 공인 IP 없이 안전하게 홈서버에 접근하고, GitHub Actions를 통해 배포 자동화를 구현하는 방법을 소개한다. ACL 설정, SSH 구성, CI/CD 연동을 다룬다.
-tags: [Server, Infra, Home Server, VPN, Tailscale, GitHub Actions, CI/CD]
+tags: [Server, Infra, Home Server, VPN, Tailscale, GitHub Actions, CI-CD]
 image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFFOTuuxm9Jq6FzHtWQEvJNESFBtUNPCS5zQ&s"
 category: 'Server'
 draft: false
