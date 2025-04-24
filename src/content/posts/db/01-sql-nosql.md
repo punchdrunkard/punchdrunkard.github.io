@@ -1,5 +1,5 @@
 ---
-title: "NoSQL의 등장 배경과 SQL과의 차이점"
+title: "[Database] NoSQL의 등장 배경과 SQL과의 차이점"
 published: 2025-04-24
 description: RDBMS의 한계를 극복하기 위해 등장한 NoSQL의 개념, 특징, 그리고 SQL과의 구조적 차이를 비교합니다.
 tags: ["Database", "NoSQL", "SQL", "CAP"]
@@ -100,11 +100,13 @@ RDBMS 의 경우, 테이블을 **정규화** 하여 중복된 데이터를 피�
 
 CAP Theorem 은 데이터베이스가 Consistency, Availability, Partitioning 을 모두 만족할 수 없고, 둘만 만족할 수 있다는 뜻이다.
 
-> [!NOTE] CAP
->
-> - Consistency : 모든 Client 가 언제나 같은 상태의 데이터를 바라볼 수 있다.
-> - Availability : 모든 Client 가 언제나 데이터에 접근할 수 있다.
-> - Partitioning : Database 가 물리적으로 전혀 다른 네트워크 공간에 위치할 수 있다. 네트워크 공간 사이가 단절되어도 시스템은 동작할 수 있다.
+:::note[CAP]
+
+- Consistency : 모든 Client 가 언제나 같은 상태의 데이터를 바라볼 수 있다.
+- Availability : 모든 Client 가 언제나 데이터에 접근할 수 있다.
+- Partitioning : Database 가 물리적으로 전혀 다른 네트워크 공간에 위치할 수 있다. 네트워크 공간 사이가 단절되어도 시스템은 동작할 수 있다.
+
+:::
 
 일반적으로 RDBMS 는 Consistency 와 Availability 를 만족하고, 이를 만족시키기 위해 ACID 속성을 가지고 있다.
 하지만 NoSQL 은 분산 환경에 최적화 하기 위해 Partitioning 과 Consistency / Availability 를 만족하는 형태가 대부분이다.
