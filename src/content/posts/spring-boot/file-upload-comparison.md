@@ -3,7 +3,7 @@ title: Spring Boot에서의 파일 업로드 비교 - MultipartFile vs InputStre
 published: 2025-03-08
 description: Spring Boot에서 대용량 파일 업로드 시 발생하는 병목 현상을 분석하고, MultipartFile 방식과 InputStream 직접 사용 방식의 성능 차이를 비교합니다.
 tags: ["Spring Boot", "File Upload", "Performance", "Java", "Backend"]
-category: Backend
+category: Spring Boot
 draft: false
 ---
 
