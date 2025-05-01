@@ -1,5 +1,5 @@
 ---
-title: 'Git 명령어 흐름을 따라 내부 구조 이해하기'
+title: '[Git] Git 명령어 흐름을 따라 내부 구조 이해하기'
 published: 2025-04-27
 description: git init, add, commit, checkout, merge 명령어를 통해 Git 내부의 오브젝트, 인덱스, 커밋 객체가 어떻게 변하는지를 파악하고 시각적으로 정리한다.
 tags: ['Git', 'Git Internals', 'Version Control']
