@@ -132,6 +132,6 @@ make
 
 ## 참고 자료
 
-- <https://redis.io/docs/latest/develop/reference/protocol-spec/#bulk-strings>
+- <https://redis.io/docs/latest/develop/reference/protocol-spec>
 - <https://redis.io/docs/latest/develop/reference/protocol-spec/#bulk-strings>
 - <https://redis.io/docs/latest/commands/echo/>
