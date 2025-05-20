@@ -2,7 +2,7 @@
 
 title: "[Redis] Redis 에서 커스텀 명령어 만들기"
 published: 2025-05-20
-description: echo와 같은 기능을 하는 커스텀 명령어 echoPunchDrunk를 Redis 서버에서 실행되도록 해보자.
+description: echo와 같은 기능을 하는 커스텀 명령어 echoPunchDrunkard를 Redis 서버에서 실행되도록 해보자.
 tags: ["Redis", "RESP", "OpenUp-2025"]
 category: Redis
 draft: false
