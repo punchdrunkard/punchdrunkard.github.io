@@ -2,7 +2,7 @@
 
 title: "[Database] ACID 보장을 위한 DBMS 동작 방식 (MySQL 위주)"
 published: 2025-06-19
-description: D트랜잭션의 ACID를 보장하기 위한 DBMS의 내부 동작에 대해 알아보자.
+description: 트랜잭션의 ACID를 보장하기 위한 DBMS의 내부 동작에 대해 알아보자.
 tags: ["Database", "Transaction", "ACID", "MySQL", "InnoDB"]
 category: Database
 draft: false
@@ -12,7 +12,7 @@ draft: false
 
 데이터베이스 시스템은 트랜잭션의 안전한 수행을 위해 ACID 속성을 보장한다.
 
-:::note[ACID]
+:::important[ACID]
 
 - **Atomicity** : all or nothing, 트랜잭션의 내부의 모든 연산이 성공하거나 모두 취소되어야 한다. 따라서 트랜잭션이 중간에 실패한다면 롤백되어야 한다.
 - **Consistency** : 데이터의 일관성이 보장되어야 한다. 예를 들어, 트랜잭션 전후로 데이터베이스의 제약 조건이 유지되어야 한다.
