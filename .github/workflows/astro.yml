@@ -22,7 +22,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: |
+          npm install playwright@1.52.0
+          npx playwright@1.52.0 install --with-deps chromium
 
       - name: Install, build, and upload your site
         uses: withastro/action@v3
