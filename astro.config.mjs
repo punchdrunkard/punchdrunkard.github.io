@@ -154,6 +154,9 @@ export default defineConfig({
 				},
 			],
 		],
+		syntaxHighlight: {
+			excludeLangs: ["mermaid"]
+		},
 	},
 	vite: {
 		build: {
