@@ -32,12 +32,11 @@ draft: false
 
 하나의 트랜잭션이 커밋될 때 `fsync()`를 통해 변경사항이 디스크에 기록되므로, 각 트랜잭션의 Durability 속성을 보장할 수 있다.
 
-<aside>
-💡
+:::note[`fsync()`의 오버헤드]
 
 `fsync()` 는 동기적(Synchronous) 연산이므로 **성능 상 오버헤드**가 있다. DBMS에서 `fsync()`의 오버헤드를 줄이기 위해 그룹 커밋이나 (MySQL InnoDB 스토리지 엔진 기준) `innodb_flush_log_at_trx_commit` 과 같은 옵션을 사용하여 동기화 주기를 설정한다.
 
-</aside>
+:::
 
 ## 로그를 이용한 복구
 
