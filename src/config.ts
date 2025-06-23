@@ -17,12 +17,12 @@ export const siteConfig: SiteConfig = {
 	},
 	banner: {
 		enable: true,
-		src: "assets/images/banner.JPG", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
+		src: "assets/images/banner3.jpg", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
 		position: "center", // Equivalent to object-position, only supports 'top', 'center', 'bottom'. 'center' by default
 		credit: {
-			enable: false, // Display the credit text of the banner image
-			text: "", // Credit text to be displayed
-			url: "", // (Optional) URL link to the original artwork or artist's page
+			enable: true, // Display the credit text of the banner image
+			text: "Rebecca Burnett", // Credit text to be displayed
+			url: "https://unsplash.com/ko/%EC%82%AC%EC%A7%84/%EB%82%98%EB%AC%B4-%EC%9A%B8%ED%83%80%EB%A6%AC-%EC%9C%84%EC%97%90-%EC%84%9C-%EC%9E%88%EB%8A%94-%EA%B2%80%EC%9D%80-%EA%B3%A0%EC%96%91%EC%9D%B4-gmMsb9DYsiA", // (Optional) URL link to the original artwork or artist's page
 		},
 	},
 	toc: {
