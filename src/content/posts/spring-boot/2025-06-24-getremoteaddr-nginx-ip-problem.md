@@ -54,7 +54,7 @@ http {
 
     ![Spring Boot application 서버에 바로 접근 결과 스크린샷](https://github.com/user-attachments/assets/c3e6226e-ae24-451c-a5c4-68ca9edbdd6c)
 
-따라서 HttpServletRequest 의 `getRemoteAddr()` 메서드는 **항상 요청을 보낸 “바로 직전”**의 IP 주소를 추출하기 때문에 (직접적인 발신지의 IP를 가져오기 때문에) 프록시가 있는 환경에서는 실제 클라이언트 IP를 알 수 없다.
+따라서 HttpServletRequest 의 `getRemoteAddr()` 메서드는 **항상 요청을 보낸 바로 직전**의 IP 주소를 추출하기 때문에 (직접적인 발신지의 IP를 가져오기 때문에) 프록시가 있는 환경에서는 실제 클라이언트 IP를 알 수 없다.
 
 ## 해결 방법
 
