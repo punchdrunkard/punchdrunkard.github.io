@@ -3,8 +3,8 @@ title: TransactionalEventListener + 배치 작업으로 회원 뱃지 발급 기
 published: 2025-06-29T15:59:00+09:00
 description: '뱃지 발급 기능에서 에러 로그 없이 간헐적으로 발생하는 비동기 처리 버그의 원인을 데이터베이스의 Isolation Level 관점에서 추적하고, @TransactionalEventListener와 배치 처리를 통해 해결한다.'
 image: 'https://github.com/user-attachments/assets/c0358226-a498-4a42-95f0-69ae53547dec'
-tags: [Spring Boot, Transaction, Isolation Level, Async, EventListener, Concurrency, Batch]
-category: 'Backend'
+tags: [Spring Boot, Transaction, Isolation Level, EventListener, Batch]
+category: 'Project'
 draft: false 
 ---
 
