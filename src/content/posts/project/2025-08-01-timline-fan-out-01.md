@@ -1,5 +1,5 @@
 ---
-title: Fan-out 방식으로 타임라인 개선하기 - 1. 문제 인식 (부하 테스트)
+title: Fan-out on Write 방식으로 타임라인 개선하기 - 1. 문제 인식 (부하 테스트)
 published: 2025-08-01T17:07:00+09:00
 description: '홈 타임라인 조회 API 에서 발생하는 병목 현상을 k6, 애플리케이션 로그, MySQL Slow query 로그를 이용하여 분석한다.'
 tags: [Timeline, Stress Test, k6, MySQL, Slow Query, Spring Boot]
